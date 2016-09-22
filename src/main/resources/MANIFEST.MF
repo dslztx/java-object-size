@@ -2,5 +2,5 @@ Manifest-Version: 1.0
 Archiver-Version: Plexus Archiver
 Created-By: Apache Maven
 Build-Jdk: 1.6.0_45
-Premain-Class: sizeofagent.InstrumentationSizeOfAgent
+Premain-Class: sizeofagent.AgentSizeCalculator
 Can-Redefine-Classes: false

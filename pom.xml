@@ -19,6 +19,25 @@
             <artifactId>guava</artifactId>
             <version>16.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>0.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>sizeofagent</groupId>
+            <artifactId>agent</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/doc/fourth_method/sizeofag.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>sizeofagent</groupId>
+            <artifactId>classmexer</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/doc/fifth_method/classmexer.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>

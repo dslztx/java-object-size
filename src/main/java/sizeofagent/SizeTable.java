@@ -11,7 +11,7 @@ public class SizeTable {
         this.bits = bits;
     }
 
-    public int markWordByteSize() {
+    public int markWord() {
         if (bits == 64) {
             return 8;
         } else {
@@ -19,7 +19,7 @@ public class SizeTable {
         }
     }
 
-    public int classPointerByteSize() {
+    public int classPointer() {
         if (bits == 64) {
             return 8;
         } else {
@@ -27,11 +27,15 @@ public class SizeTable {
         }
     }
 
-    public int arrayRecordByteSize() {
-        return 4;
+    public int arrayHeader() {
+        if (bits == 64) {
+            return (8 + 8 + 4) + 4;
+        } else {
+            return 4 + 4 + 4;
+        }
     }
 
-    public int typeByteSize(Class clz) {
+    public int fieldType(Class clz) {
         if (clz == boolean.class || clz == byte.class) {
             return 1;
         } else if (clz == char.class || clz == short.class) {
@@ -49,11 +53,24 @@ public class SizeTable {
         }
     }
 
-    public int paddingByteSize(long curByteSize) {
+    public int padding(long curByteSize) {
         if (curByteSize % 8 == 0) {
             return 0;
         } else {
             return (int) (8 - (curByteSize % 8));
+        }
+    }
+
+    public int paddingSuperClass(long curByteSize) {
+        int paddingLen = 8;
+        if (bits == 32) {
+            paddingLen = 4;
+        }
+
+        if (curByteSize % paddingLen == 0) {
+            return 0;
+        } else {
+            return (int) (paddingLen - (curByteSize % paddingLen));
         }
     }
 }

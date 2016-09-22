@@ -4,34 +4,30 @@ import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * @author dslztx
  * @date 2016Äê09ÔÂ11ÈÕ
  */
-public class InstrumentationSizeOfAgent implements SizeOfAgent {
+public class AgentSizeCalculator {
     static Instrumentation inst;
 
     public static void premain(String str, Instrumentation inst) {
-        InstrumentationSizeOfAgent.inst = inst;
+        AgentSizeCalculator.inst = inst;
     }
-
-    // avoid computing more than once
-    Map<Object, Object> visited = new IdentityHashMap<Object, Object>();
-
-    // save object graph
-    Stack<Object> stack = new Stack();
 
     /**
      * compute Java Object Size itself other than recursively
      * 
-     * @param obj can not be null
+     * @param obj
      * @return
      */
-    public long sizeOf(Object obj) {
+    public static long sizeOf(Object obj) {
+        if (obj == null) {
+            return 0;
+        }
+
         if (inst == null) {
             throw new RuntimeException("inst object is null,please use \"-javaagent\" command arg");
         } else {
@@ -41,12 +37,34 @@ public class InstrumentationSizeOfAgent implements SizeOfAgent {
 
     /**
      * compute Java Object Size recursively
-     * 
-     * @param obj can not be null
+     *
+     * @param obj
      * @return
      */
-    private long sizeOfRecursive(Object obj) {
-        if (visited.containsKey(obj)) {
+    public static long graphSizeOf(Object obj) {
+        if (obj == null) {
+            return 0;
+        }
+
+        if (inst == null) {
+            throw new RuntimeException("inst object is null,please use \"-javaagent\" command arg");
+        } else {
+            Queue<Object> queue = new LinkedList<Object>();
+            IdentitySet<Object> visited = new IdentitySet<Object>();
+
+            long total = 0;
+
+            queue.add(obj);
+            while (!queue.isEmpty()) {
+                total += internSizeOf(queue.poll(), queue, visited);
+            }
+
+            return total;
+        }
+    }
+
+    private static long internSizeOf(Object obj, Queue<Object> queue, IdentitySet<Object> visited) {
+        if (visited.contains(obj)) {
             return 0;
         }
 
@@ -58,7 +76,7 @@ public class InstrumentationSizeOfAgent implements SizeOfAgent {
                 for (int index = 0; index < arrayLen; index++) {
                     Object target = Array.get(obj, index);
                     if (target != null) {
-                        stack.push(target);
+                        queue.add(target);
                     }
                 }
             }
@@ -77,7 +95,7 @@ public class InstrumentationSizeOfAgent implements SizeOfAgent {
                         field.setAccessible(true);
                         Object target = field.get(obj);
                         if (target != null) {
-                            stack.push(target);
+                            queue.add(target);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -88,19 +106,8 @@ public class InstrumentationSizeOfAgent implements SizeOfAgent {
             }
         }
 
-        visited.put(obj, null);
+        visited.add(obj);
+
         return inst.getObjectSize(obj);
-    }
-
-    public long graphSizeOf(Object obj) {
-        long size = 0;
-
-        stack.push(obj);
-        while (!stack.isEmpty()) {
-            size += sizeOfRecursive(stack.pop());
-        }
-        visited.clear();
-
-        return size;
     }
 }
