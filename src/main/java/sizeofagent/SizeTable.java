@@ -73,4 +73,8 @@ public class SizeTable {
             return (int) (paddingLen - (curByteSize % paddingLen));
         }
     }
+
+    public boolean is32Bits() {
+        return bits == 32;
+    }
 }

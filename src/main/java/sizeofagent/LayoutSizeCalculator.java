@@ -13,6 +13,8 @@ public class LayoutSizeCalculator {
 
     private static SizeTable sizeTable;
 
+    private static final char[] CC = new char[] {'0', '0', '0', '0', '0', '0', '0', '1'};
+
     private static Map<Class, ClassInfo> cache = new HashMap<Class, ClassInfo>();
 
     static {
@@ -103,12 +105,19 @@ public class LayoutSizeCalculator {
         ClassInfo superClzInfo = build(clz.getSuperclass());
 
         ClassInfo clzInfo = new ClassInfo();
-        long totalExcludePadding = superClzInfo.getAncestorSize() + superClzInfo.getSelfSize();
+        long totalExcludePadding =
+                superClzInfo.getAncestorSize() + superClzInfo.getExtra() + superClzInfo.getSelfSize();
         long padding = sizeTable.paddingSuperClass(totalExcludePadding);
         clzInfo.setAncestorSize(totalExcludePadding + padding);
 
         List<Field> fieldList = new LinkedList<Field>();
         long selfSize = 0;
+
+        char[] c = new char[8];
+        for (int index = 0; index < c.length; index++) {
+            c[index] = '0';
+        }
+        int size;
 
         Field[] fields = clz.getDeclaredFields();
         for (Field field : fields) {
@@ -116,7 +125,10 @@ public class LayoutSizeCalculator {
                 continue;
             }
 
-            selfSize += sizeTable.fieldType(field.getType());
+            size = sizeTable.fieldType(field.getType());
+            selfSize += size;
+
+            c[size - 1] = '1';
 
             if (!field.getType().isPrimitive()) {
                 field.setAccessible(true);
@@ -125,6 +137,10 @@ public class LayoutSizeCalculator {
         }
 
         clzInfo.setSelfSize(selfSize);
+
+        if (sizeTable.is32Bits() && (totalExcludePadding + padding) % 8 != 0 && Arrays.equals(c, CC)) {
+            clzInfo.setExtra(4);
+        }
 
         fieldList.addAll(superClzInfo.getFields());
         clzInfo.setFields(fieldList);
@@ -219,6 +235,8 @@ class ClassInfo {
 
     long selfSize = 0;
 
+    long extra = 0;
+
     List<Field> fields = new LinkedList<Field>();
 
     public long getAncestorSize() {
@@ -235,6 +253,14 @@ class ClassInfo {
 
     public void setSelfSize(long selfSize) {
         this.selfSize = selfSize;
+    }
+
+    public long getExtra() {
+        return extra;
+    }
+
+    public void setExtra(long extra) {
+        this.extra = extra;
     }
 
     public List<Field> getFields() {

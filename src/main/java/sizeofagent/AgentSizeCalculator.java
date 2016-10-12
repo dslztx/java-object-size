@@ -11,6 +11,8 @@ import java.util.*;
  * @date 2016Äê09ÔÂ11ÈÕ
  */
 public class AgentSizeCalculator {
+    private static Map<Class, Long> cache = new HashMap<Class, Long>();
+
     static Instrumentation inst;
 
     public static void premain(String str, Instrumentation inst) {
@@ -31,7 +33,20 @@ public class AgentSizeCalculator {
         if (inst == null) {
             throw new RuntimeException("inst object is null,please use \"-javaagent\" command arg");
         } else {
-            return inst.getObjectSize(obj);
+            Class clz = obj.getClass();
+            if (clz.isArray()) {
+                return inst.getObjectSize(obj);
+            } else {
+                if (cache.get(clz) == null) {
+                    long size = inst.getObjectSize(obj);
+
+                    cache.put(clz, size);
+
+                    return size;
+                } else {
+                    return cache.get(clz);
+                }
+            }
         }
     }
 
@@ -108,6 +123,19 @@ public class AgentSizeCalculator {
 
         visited.add(obj);
 
-        return inst.getObjectSize(obj);
+        clz = obj.getClass();
+        if (clz.isArray()) {
+            return inst.getObjectSize(obj);
+        } else {
+            if (cache.get(clz) == null) {
+                long size = inst.getObjectSize(obj);
+
+                cache.put(clz, size);
+
+                return size;
+            } else {
+                return cache.get(clz);
+            }
+        }
     }
 }
